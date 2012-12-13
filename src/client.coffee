@@ -7,7 +7,6 @@ makeRequest = (server, params = {}) ->
   options = 
     uri: "http://#{server.host}:#{server.port}/command"
     json: params
-
   request.post options, (error, response, body) ->
     console.log error
     console.log body
