@@ -5,7 +5,7 @@ readline = require 'readline'
 makeRequest = (server, params = {}) ->
   console.log 'making request'
   options = 
-    uri: "http://#{server.host}:#{server.port}/command"
+    uri: "http://#{server.host}:#{server.port}/url"
     json: params
   request.post options, (error, response, body) ->
     console.log error
@@ -14,13 +14,13 @@ makeRequest = (server, params = {}) ->
 handleCommand = (command) ->
   params = 
     command: command
-  makeRequest servers['rinzler'], params
+  makeRequest servers['BigScreen@rinzler.local'], params
 
 browser = mdns.createBrowser mdns.tcp('http')
 servers = {}
 
 browser.on 'serviceUp', (service) ->
-  console.log 'service up: ', service.name
+  console.log 'service up: ', service
   servers[service.name] = service
 
 browser.on 'serviceDown', (service) ->

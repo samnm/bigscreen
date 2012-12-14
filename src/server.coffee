@@ -16,7 +16,13 @@ ad.start()
 app = express()
 app.use express.json()
 
-app.post '/command', (req, res) ->
+app.post '/url', (req, res) ->
+  handleCommand req.body.command
+
+app.post '/play', (req, res) ->
+  handleCommand req.body.command
+
+app.post '/open', (req, res) ->
   handleCommand req.body.command
 
 app.listen(4321);
