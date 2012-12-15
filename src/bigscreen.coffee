@@ -18,6 +18,7 @@ executeCommand = (command) ->
   switch command.type
     when 'watch' then executeWatch command
     when 'open' then executeOpen command
+    when 'stream' then executeStream command
     else console.log "Received bad command, ", command
 
 executeOpen = (command) ->
@@ -25,8 +26,12 @@ executeOpen = (command) ->
 
 executeWatch = (command) ->
 
+executeStream = (command) ->
+  exec "open -a MPlayerX.app --args -url #{command.url}"
 
-streams = {}
+streams = [
+  "video.avi"
+]
 ad = mdns.createAdvertisement(mdns.tcp('http'), 4321, name:"BigScreen@#{os.hostname()}")
 ad.start()
 
@@ -34,21 +39,21 @@ app = express()
 app.use express.json()
 
 app.post '/url', (req, res) ->
-  executeCommand req.body.command.url
+  executeCommand req.body.command
 
 app.post '/play', (req, res) ->
-  executeCommand req.body.command.url
+  executeCommand req.body.command
 
 app.post '/open', (req, res) ->
-  executeCommand req.body.command.url
+  executeCommand req.body.command
 
 app.post '/stream', (req, res) ->
-  executeCommand req.body.command.url
+  executeCommand req.body.command
 
 app.get '/stream/:file', (req, res) ->
   res.contentType 'flv'
   proc = new ffmpeg(
-    source: stream[req.params.file]
+    source: streams[req.params.file]
     nolog: true
   ).usingPreset("flashvideo").writeToStream(res, (retcode, error) ->
     console.log "file has been converted succesfully" unless error
@@ -74,13 +79,19 @@ requestCommand = (rawCommand) ->
     command: parsePlainTextCommand rawCommand
   makeRequest servers["BigScreen@#{os.hostname()}"], params
 
-parseWatchCommand = (param) ->
+parseWatchCommand = (url) ->
   type: 'watch',
-  query: param.join ' '
+  url: url
 
 parseOpenCommand = (url) ->
   type: 'open',
   url: url
+
+parseStreamCommand = (filename) ->
+  streams.push(filename)
+  console.log "http://#{os.hostname()}/stream/#{streams.length - 1}"
+  type:'stream',
+  url: "http://#{os.hostname()}:4321/stream/#{streams.length - 1}"
 
 parsePlainTextCommand = (raw) ->
   components = raw.split ' '
@@ -89,6 +100,7 @@ parsePlainTextCommand = (raw) ->
   switch components[0]
     when 'watch' then parseWatchCommand body
     when 'open' then parseOpenCommand body
+    when 'stream' then parseStreamCommand body
     else parseOpenCommand raw
 
 browser = mdns.createBrowser mdns.tcp('http')
