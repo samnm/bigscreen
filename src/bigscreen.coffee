@@ -55,7 +55,7 @@ makeRequest = (server, params = {}) ->
 requestCommand = (command) ->
   params = 
     command: command
-  makeRequest servers['BigScreen@rinzler.local'], params
+  makeRequest servers["BigScreen@#{os.hostname()}"], params
 
 browser = mdns.createBrowser mdns.tcp('http')
 servers = {}
