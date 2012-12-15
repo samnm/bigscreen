@@ -29,9 +29,6 @@ executeWatch = (command) ->
 executeStream = (command) ->
   exec "open -a MPlayerX.app --args -url #{command.url}"
 
-streams = [
-  "video.avi"
-]
 ad = mdns.createAdvertisement(mdns.tcp('http'), 4321, name:"BigScreen@#{os.hostname()}")
 ad.start()
 
@@ -50,12 +47,22 @@ app.post '/open', (req, res) ->
 app.post '/stream', (req, res) ->
   executeCommand req.body.command
 
+streams = [
+]
 app.get '/stream/:file', (req, res) ->
   res.contentType 'flv'
   proc = new ffmpeg(
     source: streams[req.params.file]
     nolog: true
-  ).usingPreset("flashvideo").writeToStream(res, (retcode, error) ->
+  ).toFormat('flv')
+  .updateFlvMetadata()
+  .withVideoBitrate('512k')
+  .withVideoCodec('libx264')
+  .withFps(24)
+  .withAudioBitrate('96k')
+  .withAudioCodec('libfaac')
+  .withAudioFrequency(22050)
+  .withAudioChannels(2).writeToStream(res, (retcode, error) ->
     console.log "file has been converted succesfully" unless error
     console.log error if error
   )
@@ -88,8 +95,7 @@ parseOpenCommand = (url) ->
   url: url
 
 parseStreamCommand = (filename) ->
-  streams.push(filename)
-  console.log "http://#{os.hostname()}/stream/#{streams.length - 1}"
+  streams.push(filename.split('\\').join(''))
   type:'stream',
   url: "http://#{os.hostname()}:4321/stream/#{streams.length - 1}"
 
