@@ -7,6 +7,18 @@ ffmpeg = require 'fluent-ffmpeg'
 request = require 'request'
 readline = require 'readline'
 
+String::hashCode = ->
+  hash = 0
+  return hash if @length is 0
+  i = 0
+  char = 0
+  while i < @length
+    char = @charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash # Convert to 32bit integer
+    i++
+  hash.toString()
+
 ### 
   Server
 ###
@@ -47,12 +59,11 @@ app.post '/open', (req, res) ->
 app.post '/stream', (req, res) ->
   executeCommand req.body.command
 
-streams = [
-]
-app.get '/stream/:file', (req, res) ->
+streams = {}
+app.get '/stream/:uuid', (req, res) ->
   res.contentType 'flv'
   proc = new ffmpeg(
-    source: streams[req.params.file]
+    source: streams[req.params.uuid]
     nolog: true
   ).toFormat('flv')
   .updateFlvMetadata()
@@ -66,6 +77,7 @@ app.get '/stream/:file', (req, res) ->
     console.log "file has been converted succesfully" unless error
     console.log error if error
   )
+  delete streams[req.params.uuid]
 
 app.listen 4321
 
@@ -95,9 +107,11 @@ parseOpenCommand = (url) ->
   url: url
 
 parseStreamCommand = (filename) ->
-  streams.push(filename.split('\\').join(''))
+  filename = filename.split('\\').join('')
+  hash = filename.hashCode()
+  streams[hash] = filename
   type:'stream',
-  url: "http://#{os.hostname()}:4321/stream/#{streams.length - 1}"
+  url: "http://#{os.hostname()}:4321/stream/#{hash}"
 
 parsePlainTextCommand = (raw) ->
   components = raw.split ' '
